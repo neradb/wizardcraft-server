@@ -73,10 +73,11 @@ public class NetworkTransport {
     }
 
     public void writeFixLengthString(String value, int len) {
+        byte[] targetByte = new byte[len];
         byte[] bytes = value.getBytes(CHARSET);
-        byte[] fixLength = new byte[len];
-        System.arraycopy(bytes, 0, fixLength, 0, bytes.length > len ? len : bytes.length);
-        output.writeBytes(bytes);
+        int length = bytes.length > len ? len : bytes.length;
+        System.arraycopy(bytes, 0, targetByte, 0, length);
+        output.writeBytes(targetByte);
 
     }
 
@@ -109,7 +110,7 @@ public class NetworkTransport {
     }
 
     public void skipRead(int len) {
-        input.readerIndex(input.readerIndex() + len);
+        input.skipBytes(len);
     }
 
     public CharSequence readCharSequence(int length) {

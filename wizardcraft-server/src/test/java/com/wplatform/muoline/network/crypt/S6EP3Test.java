@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.xml.bind.DatatypeConverter;
+import java.util.Arrays;
 
 
 public class S6EP3Test {
@@ -41,6 +42,19 @@ public class S6EP3Test {
         byte[] packet = DatatypeConverter.parseBase64Binary("w/+r1UUAxjcz8wQKPyQ8IsrH0PAGfEF0+VwSJx3GwXzcOw42Oj7OVZIU/EXp3FMYZIbCGlPGNTwJuaEKkEHWoaiNtoM8NwWwhcPBmITN+C2nH48ZhNDtNQYzOOd3stxbIPwkuI1LmgohXa1iHnUUIdLeQ3+h1oURffLHjnkZcpyuECtoLRjgYjaayychmMDG8wVPVPKokNIrLIeyyFJGLMv0pgH8FyIX5mCJqOog/B26j44cU0eKyQK6geDV7f5xMxtlYL1gy/4ZcyLexoEAdeGSp5QmHLhCb8L99cD1UVIul9IQkU35AzYhRRtU7yjTjYlhVLjCMiIVnjQfJKac");
         ByteBuf expected_buff = Unpooled.wrappedBuffer(expected);
         ByteBuf packet_buff = Unpooled.wrappedBuffer(packet);
+        ByteBuf actual_buff = S6EP3.deCrypt(packet_buff, (short) 0);
+        comparePacket(expected_buff, actual_buff);
+    }
+
+
+    @Test
+    public void C3Decrypt2() {
+        byte[] decrypted = new byte[]{(byte)0xc3, 0x0c, 0x0e, 0x00, 0x4b, 0x58, (byte)0xca, 0x06, 0x00, 0x00, 0x00, 0x00};
+        byte[] encrypted = new byte[]{(byte)0xc3, 0x18, (byte)0xe0, (byte)0xd3, 0x2b, 0x4d, 0x15, (byte)0xec, 0x03, (byte)0xf9, (byte)0xd4, 0x55, 0x60, (byte)0xb8, (byte)0xbe, 0x65, 0x03, 0x02, 0x45, 0x11, 0x38, 0x68, 0x5e, 0x60};
+
+
+        ByteBuf expected_buff = Unpooled.wrappedBuffer(decrypted);
+        ByteBuf packet_buff = Unpooled.wrappedBuffer(encrypted);
         ByteBuf actual_buff = S6EP3.deCrypt(packet_buff, (short) 0);
         comparePacket(expected_buff, actual_buff);
     }
@@ -128,8 +142,11 @@ public class S6EP3Test {
 
     private static void comparePacket(ByteBuf expected_buff, ByteBuf actual_buff) {
         byte[] expected = new byte[expected_buff.readableBytes()];
+        expected_buff.getBytes(0,expected, 0, expected.length);
         byte[] actual = new byte[actual_buff.readableBytes()];
-
+        actual_buff.getBytes(0,actual, 0, actual.length);
+        System.out.println("exp:" + Arrays.toString(expected));
+        System.out.println("act:" + Arrays.toString(actual));
         Assert.assertEquals(actual.length, expected.length);
         for (int i = 0; i < actual.length; i++) {
             String message = "index: " + i + "expected:" + expected[i] + " ,actual:" + actual[i];

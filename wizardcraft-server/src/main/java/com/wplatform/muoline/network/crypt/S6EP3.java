@@ -17,9 +17,11 @@ public final class S6EP3 {
             128079, 164742, 70235, 106898, 31544, 2047, 57011, 10183, 48413, 46165, 15171, 37433
     });
 
+
     private static final Keys C3C4_ENCRYPT_KEY = Keys.createEncryptionKeys(new int[]{
-            128079, 164742, 70235, 106898, 31544, 2047, 57011, 10183, 48413, 46165, 15171, 37433
+            73326, 109989, 98843, 171058, 13169, 19036, 35482, 29587, 62004, 64409, 35374, 64599
     });
+
 
     /// <summary>
     /// The decrypted block size.
@@ -78,8 +80,9 @@ public final class S6EP3 {
             packet.readerIndex(encryptedHeaderSize);
             result.writerIndex(decryptedHeaderSize);
             int decryptedContentSize = decryptPacketContent(packet, result, serial);
-            setPacketHead(result, packet.getUnsignedByte(0), decryptedContentSize);
-            result = result.slice(0, decryptedHeaderSize + decryptedContentSize);
+            int length = decryptedHeaderSize + decryptedContentSize;
+            setPacketHead(result, packet.getUnsignedByte(0), length);
+            result = result.slice(0, length);
             return result;
         } finally {
             packet.release();
@@ -222,7 +225,6 @@ public final class S6EP3 {
                 packet.writeShort(size);
                 break;
         }
-        packet.writerIndex(size);
     }
 
     /// <summary>
@@ -247,11 +249,11 @@ public final class S6EP3 {
     /// <param name="target">The target span.</param>
     /// <param name="resultIndex">Index of the result.</param>
     /// <param name="result">The encryption result value.</param>
-    private static void writeBytesToResult(ByteBuf outputBlock, int resultIndex, int result) {
+    private static void writeBytesToResult(ByteBuf outputBlock, int resultIndex, long result) {
         int byteOffset = (resultIndex * BITS_PER_VALUE) / BITS_PER_BYTE;
         int bitOffset = (resultIndex * BITS_PER_VALUE) % BITS_PER_BYTE;
         int firstMask = 0xFF >> bitOffset;
-        int swapped = Integer.reverseBytes(result);
+        int swapped = Integer.reverseBytes((int) result);
 
 
         //target[byteOffset++] |= (byte) (swapped >> (24 + bitOffset) & firstMask);
@@ -264,7 +266,7 @@ public final class S6EP3 {
 
 
         int remainderMask = (0xFF << (6 - bitOffset) & 0xFF) - ((0xFF << (8 - bitOffset)) & 0xFF);
-        int remainder = (result >> 16) << (6 - bitOffset);
+        long remainder = (result >> 16) << (6 - bitOffset);
 
         b2 |= (byte) (remainder & remainderMask);
         outputBlock.setByte(writeIndex, b0 & 0xFF);
@@ -287,21 +289,21 @@ public final class S6EP3 {
         // we handlePacket the first input block out of the loop, because we need to add the counter as prefix
         int size = input.readableBytes();
         int contentOfFirstBlockLength = Math.min(DECRYPTED_BLOCK_SIZE, input.readableBytes());
-        int[] ringBuffer = new int[4];
+        long[] ringBuffer = new long[4];
         ByteBuf inputBlock = Unpooled.buffer(contentOfFirstBlockLength);
         //write serial number in first input block
         inputBlock.writeByte((byte) serial);
-        inputBlock.writeBytes(input, 0, contentOfFirstBlockLength - 1);
+        inputBlock.writeBytes(input, input.readerIndex(), contentOfFirstBlockLength - 1);
         ByteBuf outputBlock = output.slice(output.writerIndex(), ENCRYPTED_BLOCK_SIZE);
         //encrypt first block
         encryptBlock(inputBlock, outputBlock, ringBuffer, contentOfFirstBlockLength);
         //i += DECRYPTED_BLOCK_SIZE;
         //sizeCounter += ENCRYPTED_BLOCK_SIZE;
-        input.readerIndex(input.readerIndex() + ENCRYPTED_BLOCK_SIZE);
-        output.writerIndex(output.writerIndex() + DECRYPTED_BLOCK_SIZE);
+        input.readerIndex(input.readerIndex() + contentOfFirstBlockLength - 1); //byte[0] is serial number.
+        output.writerIndex(output.writerIndex() + ENCRYPTED_BLOCK_SIZE);
 
         // encrypt the rest of the blocks.
-        while (output.writerIndex() <= size/*i < size*/) {
+        while (input.readerIndex() <= size/*i < size*/) {
             int contentOfBlockLength = Math.min(DECRYPTED_BLOCK_SIZE, input.readableBytes());
             inputBlock = input.slice(input.readerIndex(), contentOfBlockLength);//input.Slice(i - 1, contentOfBlockLength).CopyTo(this.inputBuffer);
             //this.inputBuffer.AsSpan(contentOfBlockLength).Clear();
@@ -310,11 +312,11 @@ public final class S6EP3 {
             //i += DECRYPTED_BLOCK_SIZE;
             //sizeCounter += ENCRYPTED_BLOCK_SIZE;
             input.readerIndex(input.readerIndex() + contentOfBlockLength);
-            output.writerIndex(output.writerIndex() + DECRYPTED_BLOCK_SIZE);
+            output.writerIndex(output.writerIndex() + ENCRYPTED_BLOCK_SIZE);
         }
     }
 
-    private static void encryptBlock(ByteBuf inputBlock, ByteBuf outputBlock, int[] ringBuffer, int blockSize) {
+    private static void encryptBlock(ByteBuf inputBlock, ByteBuf outputBlock, long[] ringBuffer, int blockSize) {
         //outputBuffer.Clear(); // since the memory comes from the shared memory pool, it might not be initialized yet
         //this.EncryptContent();
         if (blockSize < DECRYPTED_BLOCK_SIZE) {
@@ -324,10 +326,10 @@ public final class S6EP3 {
         Keys keys = C3C4_ENCRYPT_KEY;
         //var input = MemoryMarshal.Cast < byte,ushort > (this.inputBuffer);
         int[] input = new int[4];
-        input[0] = inputBlock.readUnsignedShort();
-        input[1] = inputBlock.readUnsignedShort();
-        input[2] = inputBlock.readUnsignedShort();
-        input[3] = inputBlock.readUnsignedShort();
+        input[0] = inputBlock.readUnsignedShortLE();
+        input[1] = inputBlock.readUnsignedShortLE();
+        input[2] = inputBlock.readUnsignedShortLE();
+        input[3] = inputBlock.readUnsignedShortLE();
 
 
         ringBuffer[0] = ((keys.xorKey[0] ^ input[0]) * keys.encryptKey[0]) % keys.modKey[0];
@@ -363,7 +365,7 @@ public final class S6EP3 {
         }
         size ^= checksum;
         outputBlock.setByte(outputBlock.capacity() - 2, size);
-        outputBlock.setByte(outputBlock.capacity() - 1, size);
+        outputBlock.setByte(outputBlock.capacity() - 1, checksum);
         //outputBuffer[outputBuffer.Length - 2] = size;
         //outputBuffer[outputBuffer.Length - 1] = checksum;
     }

@@ -74,8 +74,8 @@ public final class NetworkFrameDecoder extends ByteToMessageDecoder {
             return;
         }
         // There's enough bytes in the buffer. Read it.
-        ByteBuf frame = in.slice(0, frameLength);
-        int serialNumber = NetworkConnection.wrapped(ctx.channel()).getAndPlusSerialNumber();
+        ByteBuf frame = in.slice(0, frameLength).retain();
+        int serialNumber = NetworkConnection.wrapped(ctx.channel()).getSerialNumber();
         ByteBuf packet = S6EP3.deCrypt(frame, (short) serialNumber);
         out.add(packet);
     }

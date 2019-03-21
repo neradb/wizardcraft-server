@@ -6,6 +6,7 @@ import com.wplatform.muoline.engine.PacketHandlerDispatcher;
 import com.wplatform.muoline.network.NetworkTransport;
 import com.wplatform.muoline.handler.DefaultPacketHandler;
 import com.wplatform.muoline.handler.PacketHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -19,6 +20,7 @@ import java.util.Optional;
  * @author jorgie.li
  *
  */
+@Slf4j
 @Component
 public class PacketHandlerDispatcherImpl implements PacketHandlerDispatcher, ApplicationContextAware {
 
@@ -29,7 +31,10 @@ public class PacketHandlerDispatcherImpl implements PacketHandlerDispatcher, App
 
     @Override
     public PacketHandler dispatchHandler(NetworkTransport io) {
-        PacketHandler processor = cacheProcessor.get(null);
+        int skipRead = io.readByte() % 2 == 1 ? 1 : 2;
+        io.skipRead(skipRead);
+        int opcode = io.readByte();
+        PacketHandler processor = cacheProcessor.get(opcode);
         if (processor == null) {
             processor = NOT_SUPPORT_PROCESSOR;
         }

@@ -33,6 +33,7 @@ import javax.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -52,12 +53,15 @@ public class AllInOneNetworkServer implements NetworkServer {
     @Value("${server.connection-server.port}")
     private int connectionPort;
 
-    //@Value("${server.game-server.port}")
+
     private int gamePorts[];
 
 
     @Value("${server.connection-server.internet-ip}")
     private String internetIp;
+
+    @Value("${server.connection-server.size-of-game-server}")
+    private int sizeOfGameServer;
 
 
     @Autowired
@@ -65,7 +69,6 @@ public class AllInOneNetworkServer implements NetworkServer {
 
     private ThreadPoolExecutor userExecutor;
 
-    private ServerRegister serverRegister = new ServerRegister();
 
     public AllInOneNetworkServer() {
         this.userExecutor = createThreadPoolExecutor();
@@ -76,8 +79,8 @@ public class AllInOneNetworkServer implements NetworkServer {
     public void run() {
 
 
-        connectionServerBossGroup = new NioEventLoopGroup(SysProperties.CS_GROUPTHREADS, new DefaultThreadFactory("LoginServer-NettyBossGroup"));
-        connectServerWorkerGroup = new NioEventLoopGroup(SysProperties.CS_WORKERTHREADS, new DefaultThreadFactory("LoginServer-NettyWorkerGroup"));
+        connectionServerBossGroup = new NioEventLoopGroup(SysProperties.CS_GROUPTHREADS, new DefaultThreadFactory("ConnectionServer-NettyBossGroup"));
+        connectServerWorkerGroup = new NioEventLoopGroup(SysProperties.CS_WORKERTHREADS, new DefaultThreadFactory("ConnectionServer-NettyWorkerGroup"));
 
         ServerBootstrap connectionServerBootstrap = new ServerBootstrap()
                 .group(connectionServerBossGroup, connectServerWorkerGroup)
@@ -135,7 +138,6 @@ public class AllInOneNetworkServer implements NetworkServer {
             for (int port : gamePorts) {
                 channel = gameServerBootstrap.bind(port).sync().channel();
                 serverChannels.add(channel);
-                //serverRegister.registerServer(ServerRegister.ServerInfo.create(internetIp, port));
             }
             serverChannels.newCloseFuture().sync();
             //bind.channel().closeFuture().sync();
@@ -185,7 +187,7 @@ public class AllInOneNetworkServer implements NetworkServer {
         } catch (Exception e) {
             throw new IllegalArgumentException("Incorrect config server.game-server.port = " + gamePorts);
         }
-        if(this.gamePorts.length < 1) {
+        if (this.gamePorts.length < 1) {
             throw new IllegalArgumentException("Incorrect config server.game-server.port = " + gamePorts);
         }
     }
@@ -208,43 +210,32 @@ public class AllInOneNetworkServer implements NetworkServer {
             try {
                 switch (opcode) {
                     case 0xF4_03: { // Request ServerInfo information
-                        int serverId = io.readUnsignedByte();
-                        ServerRegister.ServerInfo server = serverRegister.getServerById(serverId);
-                        if (server == null) {
-                            server = serverRegister.getRegisteredServer().iterator().next();
-                        }
                         io.writeByte(0xC1);
-                        io.writeShort(0x00);//packet length;
+                        io.writeByte(0x00);//packet length;
                         io.writeShort(0xF4_03);
-
-                        io.writeString(internetIp);
-                        io.writeShortLE(gamePorts[0]);
+                        io.writeFixLengthString(internetIp, 16);
+                        io.writeShortLE(gamePorts[ThreadLocalRandom.current().nextInt(200) & gamePorts.length-1]);
                         break;
                     }
 
                     case 0xF4_06: { // Request ServerInfo list
-                        Collection<ServerRegister.ServerInfo> servers = serverRegister.getRegisteredServer();
                         io.writeByte(0xC2);
                         io.writeShort(0x00);
                         io.writeShort(0xF4_06);
-                        io.writeShort(8);
-                        int i =0;
-                        ServerRegister.ServerInfo server = serverRegister.getRegisteredServer().iterator().next();
-                        for (int j = 0; j < 8; j++) {
-                            io.writeShortLE(server.getServerId());
-                            //ServerLoad = server.OnlinePlayerCount * 100f / server.MaximumPlayers
-                            io.writeShortLE(server.getServerLoad() * i++);
+                        io.writeShort(sizeOfGameServer);
+                        for (int i = 0; i < sizeOfGameServer; i++) {
+                            io.writeShortLE(i);
+                            io.writeShortLE((int) (100 * ThreadLocalRandom.current().nextDouble(0.5)));
                         }
                         break;
                     }
                     default:
                         LOG.warn("ConnectionServer Unkown packet opcode = {}, hexDump = ()", Integer.toHexString(opcode),
                                 ByteBufUtil.hexDump(io.getInput(), 0, io.getInput().readableBytes()));
-                        throw new PacketHandleException("Unkown packet opcode = "+Integer.toHexString(opcode));
+                        throw new PacketHandleException("Unkown packet opcode = " + Integer.toHexString(opcode));
 
                 }
                 Packets.setPacketSize(io.getOutput());
-                System.out.println(ByteBufUtil.hexDump(io.getOutput()));
                 conn.getChannel().writeAndFlush(io.getOutput());
             } catch (Exception e) {
                 io.getOutput().release();
@@ -256,8 +247,8 @@ public class AllInOneNetworkServer implements NetworkServer {
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
-            NetworkConnection conn = NetworkConnection.wrapped(ctx.channel());
-            conn.close();
+            NetworkConnection wrapped = NetworkConnection.wrapped(ctx.channel());
+            wrapped.close();
         }
 
         @Override
@@ -291,7 +282,7 @@ public class AllInOneNetworkServer implements NetworkServer {
             gameEngine.onConnected(connection);
             NetworkTransport networkTransport = connection.getOutgoingNetworkTransport();
             networkTransport.writeBytes(new byte[]{(byte) 0xC1, 0x0C, (byte) 0xF1, 0x00, 0x01});
-            networkTransport.writeInt(connection.getConnectionId());
+            networkTransport.writeShort(connection.getConnectionId());
             networkTransport.writeString(SysProperties.GS_LOWEST_CLIENT_VERSION);
             ctx.channel().writeAndFlush(networkTransport.getOutput());
         }
@@ -311,7 +302,7 @@ public class AllInOneNetworkServer implements NetworkServer {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             LOG.error("Game server Handler exceptionCaught", cause);
-            //ctx.close();
+            ctx.close();
         }
 
     }
@@ -333,16 +324,18 @@ public class AllInOneNetworkServer implements NetworkServer {
         public void run() {
             NetworkConnection connection = NetworkConnection.wrapped(channel);
             NetworkTransport transport = connection.newNetworkTransport(packet);
+            ByteBuf output = transport.getOutput();
             try {
                 gameEngine.processPacket(transport);
-                Packets.setPacketSize(transport.getOutput());
-                channel.writeAndFlush(transport.getOutput());
+                connection.plusAndGetSerialNumber();
+                Packets.setPacketSize(output);
+                channel.writeAndFlush(output);
             } catch (Throwable e) {
-                transport.getOutput().release();
+                output.release();
                 LOG.error("an exception happen in GameServer when handlePacket request", e);
             } finally {
                 transport.getInput().release();
-                ACCESSLOGGER.log();
+                //ACCESSLOGGER.log();
             }
         }
 

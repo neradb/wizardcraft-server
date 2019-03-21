@@ -1,7 +1,8 @@
 server:
   connection-server:
     port: 6010
-    internet-ip: 10.20.1.19
+    internet-ip: 192.168.56.1
+    size-of-game-server: 8
 
   game-server:
     port: 6061

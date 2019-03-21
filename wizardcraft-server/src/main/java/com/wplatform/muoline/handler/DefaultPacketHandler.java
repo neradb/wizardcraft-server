@@ -1,16 +1,19 @@
 package com.wplatform.muoline.handler;
 
 import com.wplatform.muoline.network.NetworkTransport;
+import io.netty.buffer.ByteBufUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author jorgie.li
  */
+@Slf4j
 public class DefaultPacketHandler implements PacketHandler {
 
     @Override
     public void handlePacket(NetworkTransport io) {
-        //log.warn("Unknown packet[opcode = 0x"+PrintData.fillHex(opcode, 2)+"]. Dump: ");
-        //log.warn(PrintData.printData(buff.nioBuffer(0, buff.writerIndex())));
+        throw new UnsupportedOperationException("Feature is not available, packet dump:" +
+                ByteBufUtil.hexDump(io.getInput(), 0 ,io.getInput().writerIndex()));
     }
 
 }
