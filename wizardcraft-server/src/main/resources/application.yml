@@ -7,9 +7,13 @@ server:
   game-server:
     port: 6061
     client-version: 10404
-
-
-  autoRegistration: true
+    auto-registration: true
+    MadicGladiatorLvlReq:
+    DarkLordLvlReq:
+    RageFighterLvlReq:
+    SummonerLvlReq:
+    Max_Normal_Level:
+    Max_Master_Level:
 
 spring:
   datasource:

@@ -125,7 +125,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>com.wplatform.muoline.WizardcraftApplication</mainClass>
+                            <mainClass>com.wplatform.wizardcraft.WizardcraftApplication</mainClass>
                         </manifest>
                     </archive>
                     <descriptors>

@@ -42,9 +42,9 @@
 	
 	<files>
 		<file>
-			<source>src/main/assembly/bin/openddal.sh</source>
+			<source>src/main/assembly/bin/wizardcraft_server.sh</source>
 			<outputDirectory>bin</outputDirectory>
-			<destName>openddal.sh</destName>
+			<destName>wizardcraft_server.sh</destName>
 			<fileMode>755</fileMode>
 			<lineEnding>unix</lineEnding>
 		</file>
