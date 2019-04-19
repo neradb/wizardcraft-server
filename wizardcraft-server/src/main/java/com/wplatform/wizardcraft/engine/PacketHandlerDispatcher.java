@@ -1,10 +1,10 @@
 package com.wplatform.wizardcraft.engine;
 
 import com.wplatform.wizardcraft.network.NetworkTransport;
-import com.wplatform.wizardcraft.handler.PacketHandler;
+import com.wplatform.wizardcraft.handler.PacketProcessor;
 
 public interface PacketHandlerDispatcher {
 
-    PacketHandler dispatchHandler(NetworkTransport transport);
+    PacketProcessor dispatchHandler(NetworkTransport transport);
 
 }

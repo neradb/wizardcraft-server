@@ -1,12 +1,12 @@
 package com.wplatform.wizardcraft.engine.impl;
 
 import com.google.common.collect.Maps;
-import com.wplatform.wizardcraft.handler.Packet;
+import com.wplatform.wizardcraft.handler.Processor;
 import com.wplatform.wizardcraft.engine.PacketHandlerDispatcher;
 import com.wplatform.wizardcraft.network.NetworkTransport;
 import com.wplatform.wizardcraft.handler.DefaultPacketHandler;
-import com.wplatform.wizardcraft.handler.PacketHandler;
-import com.wplatform.wizardcraft.network.Packets;
+import com.wplatform.wizardcraft.handler.PacketProcessor;
+import com.wplatform.wizardcraft.proto.Proto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -26,16 +26,16 @@ import java.util.Optional;
 public class PacketHandlerDispatcherImpl implements PacketHandlerDispatcher, ApplicationContextAware {
 
     private static final DefaultPacketHandler NOT_SUPPORT_PROCESSOR = new DefaultPacketHandler();
-    private final Map<Integer, PacketHandler> cacheProcessor = Maps.newHashMap();
+    private final Map<Integer, PacketProcessor> cacheProcessor = Maps.newHashMap();
 
 
 
     @Override
-    public PacketHandler dispatchHandler(NetworkTransport io) {
-        int packetHeaderSize = Packets.getPacketHeaderSize(io.getInput());
+    public PacketProcessor dispatchHandler(NetworkTransport io) {
+        int packetHeaderSize = Proto.getPacketHeaderSize(io.getInput());
         io.skipRead(packetHeaderSize);
         int opcode = io.readUnsignedByte();
-        PacketHandler processor = cacheProcessor.get(opcode);
+        PacketProcessor processor = cacheProcessor.get(opcode);
         if (processor == null) {
             processor = NOT_SUPPORT_PROCESSOR;
         }
@@ -45,10 +45,10 @@ public class PacketHandlerDispatcherImpl implements PacketHandlerDispatcher, App
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        Map<String, PacketHandler> beansOfType = applicationContext.getBeansOfType(PacketHandler.class);
-        for (Map.Entry<String, PacketHandler> entry : beansOfType.entrySet()) {
-            PacketHandler bean = entry.getValue();
-            Packet packet = bean.getClass().getAnnotation(Packet.class);
+        Map<String, PacketProcessor> beansOfType = applicationContext.getBeansOfType(PacketProcessor.class);
+        for (Map.Entry<String, PacketProcessor> entry : beansOfType.entrySet()) {
+            PacketProcessor bean = entry.getValue();
+            Processor packet = bean.getClass().getAnnotation(Processor.class);
             Optional.ofNullable(packet).ifPresent(e->{
                 for (int opcode : e.opcode()) {
                     cacheProcessor.put(opcode, bean);

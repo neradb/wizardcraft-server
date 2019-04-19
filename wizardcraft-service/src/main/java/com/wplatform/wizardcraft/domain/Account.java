@@ -95,8 +95,9 @@ public class Account {
     /// <summary>
     /// Gets or sets the characters.
     /// </summary>
-    @Transient
-    private List<Characters> characters = Lists.newArrayList();
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_name")
+    private List<Characters> characters;
 
     /// <summary>
     /// The state of an account.

@@ -4,7 +4,7 @@ import com.wplatform.wizardcraft.constants.LoginConstants;
 import com.wplatform.wizardcraft.engine.GameEngine;
 import com.wplatform.wizardcraft.network.NetworkConnection;
 import com.wplatform.wizardcraft.network.NetworkTransport;
-import com.wplatform.wizardcraft.network.Packets;
+import com.wplatform.wizardcraft.proto.Proto;
 import com.wplatform.wizardcraft.util.MD5Utils;
 import com.wplatform.wizardcraft.domain.Account;
 import com.wplatform.wizardcraft.repostory.AccountRepository;
@@ -16,8 +16,8 @@ import java.util.Date;
 import java.util.Optional;
 
 @Slf4j
-@Packet(opcode = Packets.LoginLogoutGroup)
-public class LoginPacketHandler implements PacketHandler {
+//@Processor(opcode = Proto.LoginLogoutGroup)
+public class LoginPacketHandler implements PacketProcessor {
 
 
     @Value("${server.game-server.auto-registration}")

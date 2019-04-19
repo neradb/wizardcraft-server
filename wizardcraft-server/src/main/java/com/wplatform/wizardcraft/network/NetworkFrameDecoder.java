@@ -17,6 +17,7 @@
 package com.wplatform.wizardcraft.network;
 
 import com.wplatform.wizardcraft.network.crypt.S6EP3;
+import com.wplatform.wizardcraft.proto.Proto;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -66,7 +67,7 @@ public final class NetworkFrameDecoder extends ByteToMessageDecoder {
         // because the whole frame might not be in the buffer yet.
         // We will reset the buffer position to the marked position if
         // there's not enough bytes in the buffer.
-        short frameLength = Packets.getPacketSize(in);
+        short frameLength = Proto.getPacketSize(in);
         if (in.readableBytes() < frameLength) {
             return;
         }

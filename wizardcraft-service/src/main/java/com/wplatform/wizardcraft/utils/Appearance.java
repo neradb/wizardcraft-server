@@ -107,8 +107,8 @@ public class Appearance {
         }
 
 
-        target[0] = (byte) (characters.getCharacterClass().Number << 3 & 0xF8);
-        target[0] |= (byte) characters.getPose().value;
+        target[0] = (byte) ((characters.getCharacterClass() << 3) & 0xF8);
+        target[0] |= (byte) Characters.Pose.Standing.value; //todo
         setHand(target, itemArray[InventoryConstants.LeftHandSlot], 1, 12);
 
         setHand(target, itemArray[InventoryConstants.RightHandSlot], 2, 13);

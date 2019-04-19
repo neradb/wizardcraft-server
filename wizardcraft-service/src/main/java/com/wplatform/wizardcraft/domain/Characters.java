@@ -9,6 +9,7 @@ import com.wplatform.wizardcraft.items.ItemSetGroup;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -20,12 +21,14 @@ import java.util.stream.Stream;
 /// </summary>
 @Data
 @Entity
+@NamedEntityGraph(name = "Characters.Graph", attributeNodes = {@NamedAttributeNode("inventoryItems")})
 @Table(name = "characters")
 public class Characters {
     /// <summary>
     /// Gets or sets the identifier.
     /// </summary>
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Integer id;
 
@@ -46,12 +49,9 @@ public class Characters {
     @Column(name = "account_name")
     private String accountName;
 
-    /// <summary>
-    /// Gets or sets the character class.
-    /// </summary>
-    @Transient
-    public CharacterClass characterClass;
 
+    @Column(name = "character_class")
+    private int characterClass;
     /// <summary>
     /// Gets or sets the character slot in the account.
     /// </summary>
@@ -134,7 +134,7 @@ public class Characters {
     /// Gets or sets the value.
     /// </summary>
     @Column(name = "character_pose")
-    public Pose pose;
+    public Pose pose = Pose.Standing;
 
     /// <summary>
     /// Gets or sets the quest info. Don't know yet what its content is.
@@ -189,8 +189,12 @@ public class Characters {
     /// <summary>
     /// Gets or sets the inventory.
     /// </summary>
-    @Transient
-    public ItemStorage inventory;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "character_id")
+    public List<Item> inventoryItems;
+
+    @Column(name = "inventory_money")
+    private BigDecimal inventoryMoney;
 
     /// <summary>
     /// Gets or sets the drop item groups.
@@ -200,13 +204,13 @@ public class Characters {
 
 
     public List<Item> getEquippedItems() {
-        return this.inventory.getItems().stream()
+        return this.inventoryItems.stream()
                 .filter(e -> e.getItemSlot() <= InventoryConstants.LastEquippableItemSlotIndex)
                 .collect(Collectors.toList());
     }
 
     public boolean hasFullAncientSetEquipped() {
-        Stream<Item> itemStream = inventory.getItems().stream()
+        Stream<Item> itemStream = inventoryItems.stream()
                 .filter(i -> i.getItemSlot() <= InventoryConstants.LastEquippableItemSlotIndex
                         && i.getItemSlot() >= InventoryConstants.FirstEquippableItemSlotIndex
                         && i.ItemSetGroups.stream().anyMatch(group -> group.AncientSetDiscriminator > 0));

@@ -2,6 +2,7 @@ package com.wplatform.wizardcraft.network;
 
 import com.wplatform.wizardcraft.engine.GameEngine;
 import com.wplatform.wizardcraft.handler.PacketHandleException;
+import com.wplatform.wizardcraft.proto.Proto;
 import com.wplatform.wizardcraft.util.AccessLogger;
 import com.wplatform.wizardcraft.util.ExtendableThreadPoolExecutor;
 import com.wplatform.wizardcraft.util.SysProperties;
@@ -232,7 +233,7 @@ public class AllInOneNetworkServer implements NetworkServer {
                         throw new PacketHandleException("Unkown packet opcode = " + Integer.toHexString(opcode));
 
                 }
-                Packets.setPacketSize(io.getOutput());
+                Proto.setPacketSize(io.getOutput());
                 conn.getChannel().writeAndFlush(io.getOutput());
             } catch (Exception e) {
                 io.getOutput().release();
@@ -329,7 +330,7 @@ public class AllInOneNetworkServer implements NetworkServer {
             try {
                 gameEngine.processPacket(transport);
                 if(transport.getOutput().readableBytes() > 0) {
-                    Packets.setPacketSize(output);
+                    Proto.setPacketSize(output);
                     channel.writeAndFlush(output);
                 } else {
                     output.release();

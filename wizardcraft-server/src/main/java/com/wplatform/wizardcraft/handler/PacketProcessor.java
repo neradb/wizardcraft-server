@@ -5,7 +5,7 @@ import com.wplatform.wizardcraft.network.NetworkTransport;
 /**
  * @author jorgie.li
  */
-public interface PacketHandler {
+public interface PacketProcessor {
 
     void handlePacket(NetworkTransport io) throws PacketHandleException;
 

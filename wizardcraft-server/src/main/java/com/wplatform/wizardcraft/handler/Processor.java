@@ -8,6 +8,6 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Component
 @Documented
-public @interface Packet {
+public @interface Processor {
     int[] opcode() default {};
 }

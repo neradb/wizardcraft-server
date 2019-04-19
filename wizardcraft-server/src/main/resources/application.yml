@@ -6,7 +6,7 @@ server:
 
   game-server:
     port: 6061
-    client-version: 10404
+    client-version: 10405
     auto-registration: true
     MadicGladiatorLvlReq:
     DarkLordLvlReq:

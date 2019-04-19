@@ -1,6 +1,6 @@
 package com.wplatform.wizardcraft.network.crypt;
 
-import com.wplatform.wizardcraft.network.Packets;
+import com.wplatform.wizardcraft.proto.Proto;
 import com.wplatform.wizardcraft.util.SysProperties;
 import io.netty.buffer.*;
 
@@ -74,7 +74,7 @@ public final class S6EP3 {
                         "The packet has an unexpected content size " + contentSize + ". It must be a multiple of " + ENCRYPTED_BLOCK_SIZE);
             }
             int maximumDecryptedSize = getMaximumDecryptedSize(packet);
-            int encryptedHeaderSize = Packets.getPacketHeaderSize(packet);
+            int encryptedHeaderSize = Proto.getPacketHeaderSize(packet);
             int decryptedHeaderSize = encryptedHeaderSize - 1;
             ByteBuf result = alloc.buffer(maximumDecryptedSize, maximumDecryptedSize);
             packet.readerIndex(encryptedHeaderSize);
@@ -91,8 +91,8 @@ public final class S6EP3 {
 
 
     private static ByteBuf decryptC1C2(ByteBuf packet) {
-        int headerSize = Packets.getPacketHeaderSize(packet);
-        short packetSize = Packets.getPacketSize(packet);
+        int headerSize = Proto.getPacketHeaderSize(packet);
+        short packetSize = Proto.getPacketSize(packet);
         for (int i = packetSize - 1; i > headerSize; i--) {
             short b = (short) (packet.getUnsignedByte(i) ^ packet.getUnsignedByte(i - 1) ^ XOR_32_KEYS[i % 32]);
             packet.setByte(i, b & 0xFF);
@@ -111,7 +111,7 @@ public final class S6EP3 {
             ByteBuf result = alloc.buffer(encryptedSize, encryptedSize);
             setPacketHead(result, packet.getUnsignedByte(0), encryptedSize);
             // encrypting the content:
-            int headerSize = Packets.getPacketHeaderSize(packet);
+            int headerSize = Proto.getPacketHeaderSize(packet);
             //var input = packet.Slice(headerSize);
             packet.readerIndex(headerSize);
             result.writerIndex(headerSize);
@@ -234,11 +234,11 @@ public final class S6EP3 {
     /// <param name="decrypted">if set to <c>true</c> it is decrypted. Encrypted packets additionally contain a counter.</param>
     /// <returns>The size of the actual content.</returns>
     private static int getContentSize(ByteBuf packet, boolean decrypted) {
-        return Packets.getPacketSize(packet) - Packets.getPacketHeaderSize(packet) + (decrypted ? 1 : 0);
+        return Proto.getPacketSize(packet) - Proto.getPacketHeaderSize(packet) + (decrypted ? 1 : 0);
     }
 
     private static int getMaximumDecryptedSize(ByteBuf packet) {
-        return ((getContentSize(packet, false) / ENCRYPTED_BLOCK_SIZE) * DECRYPTED_BLOCK_SIZE) + Packets.getPacketHeaderSize(packet) - 1;
+        return ((getContentSize(packet, false) / ENCRYPTED_BLOCK_SIZE) * DECRYPTED_BLOCK_SIZE) + Proto.getPacketHeaderSize(packet) - 1;
     }
 
 
@@ -278,7 +278,7 @@ public final class S6EP3 {
 
     private static int getEncryptedSize(ByteBuf packet) {
         int contentSize = getContentSize(packet, true);
-        return (((contentSize / DECRYPTED_BLOCK_SIZE) + (((contentSize % DECRYPTED_BLOCK_SIZE) > 0) ? 1 : 0)) * ENCRYPTED_BLOCK_SIZE) + Packets.getPacketHeaderSize(packet);
+        return (((contentSize / DECRYPTED_BLOCK_SIZE) + (((contentSize % DECRYPTED_BLOCK_SIZE) > 0) ? 1 : 0)) * ENCRYPTED_BLOCK_SIZE) + Proto.getPacketHeaderSize(packet);
     }
 
     private static void encryptPacketContent(ByteBuf input, ByteBuf output, short serial) {

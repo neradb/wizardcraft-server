@@ -3,7 +3,7 @@ package com.wplatform.wizardcraft.engine;
 
 import com.google.common.collect.Maps;
 import com.wplatform.wizardcraft.network.NetworkConnection;
-import com.wplatform.wizardcraft.handler.PacketHandler;
+import com.wplatform.wizardcraft.handler.PacketProcessor;
 import com.wplatform.wizardcraft.network.NetworkTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,13 +45,13 @@ public class GameEngine {
     }
 
     public void onConnectionClose(NetworkTransport transport) {
-        PacketHandler processor = processDispatcher.dispatchHandler(transport);
+        PacketProcessor processor = processDispatcher.dispatchHandler(transport);
         processor.handlePacket(transport);
     }
 
 
     public void processPacket(NetworkTransport transport) {
-        PacketHandler processor = processDispatcher.dispatchHandler(transport);
+        PacketProcessor processor = processDispatcher.dispatchHandler(transport);
         processor.handlePacket(transport);
     }
 

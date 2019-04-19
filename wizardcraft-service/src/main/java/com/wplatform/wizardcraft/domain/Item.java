@@ -24,6 +24,10 @@ public class Item {
     @Id
     @Column(name = "id")
     private int id;
+
+
+    @Column(name = "character_id")
+    private int characterId;
     /// <summary>
     /// Gets or sets the item slot in the <see cref="ItemStorage"/>.
     /// </summary>

@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author jorgie.li
  */
 @Slf4j
-public class DefaultPacketHandler implements PacketHandler {
+public class DefaultPacketHandler implements PacketProcessor {
 
     @Override
     public void handlePacket(NetworkTransport io) {
